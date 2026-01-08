@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>給食放送 印刷専用</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+
+select, button {
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.print-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  box-sizing: border-box;
+  margin-top: 20px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.label {
+  font-weight: bold;
+  margin-top: 14px;
+}
+
+.box {
+  border: 1px solid #000;
+  padding: 8px;
+  white-space: pre-wrap;
+}
+
+@media print {
+  select, button {
+    display: none;
+  }
+  body {
+    margin: 0;
+  }
+  .print-page {
+    page-break-after: always;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<select id="episodeSelect">
+  <option value="">放送回を選択</option>
+</select>
+
+<button onclick="window.print()">印刷</button>
+
+<div id="printArea"></div>
+
+<script>
+/* ===== JSONをここに貼る ===== */
+const data = [
+  {
+    "date": "3/2",
+    "number": "5",
+    "trivia": "この時間はランチタイム雑学をお届けします。\n今日のテーマは「色」です。\n\nでは、問題です。\nなぜ日本では、緑なのに「青」と言うことがあるのでしょうか？\n\n10秒間、考えてみてください。"
+  }
+];
+/* =========================== */
+
+const select = document.getElementById("episodeSelect");
+const area = document.getElementById("printArea");
+
+data.forEach(item => {
+  if (!item.number) return;
+  const option = document.createElement("option");
+  option.value = item.number;
+  option.textContent = `第${item.number}回（${item.date}）`;
+  select.appendChild(option);
+});
+
+select.addEventListener("change", () => {
+  area.innerHTML = "";
+  const selected = data.find(d => d.number === select.value);
+  if (!selected) return;
+
+  area.innerHTML = `
+    <div class="print-page">
+      <h1>給食放送 提出用原稿</h1>
+
+      <div class="label">放送予定日</div>
+      <div class="box">${selected.date}</div>
+
+      <div class="label">テーマ</div>
+      <div class="box">${getTheme(selected.trivia)}</div>
+
+      <div class="label">台本本文</div>
+      <div class="box">${selected.trivia}</div>
+    </div>
+  `;
+});
+
+function getTheme(text) {
+  const m = text.match(/テーマは「(.+?)」/);
+  return m ? m[1] : "（未記入）";
+}
+</script>
+
+</body>
+</html>
