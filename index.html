@@ -7,109 +7,123 @@
 <style>
 body {
   font-family: sans-serif;
-  margin: 20px;
 }
 
-select, button {
-  font-size: 16px;
-  margin-right: 10px;
+input, textarea, button {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+textarea {
+  height: 180px;
+}
+
+/* 印刷用 */
+@media print {
+  body {
+    margin: 20mm;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  input, textarea, button {
+    display: none;
+  }
+
+  .print-page {
+    page-break-after: always;
+  }
+
+  .screen-hidden {
+    display: block;
+  }
+}
+
+/* 画面では隠す */
+.screen-hidden {
+  display: none;
 }
 
 .print-page {
-  width: 210mm;
-  min-height: 297mm;
-  padding: 20mm;
-  box-sizing: border-box;
-  margin-top: 20px;
+  border: 1px solid #000;
+  padding: 10mm;
 }
 
 h1 {
   text-align: center;
   font-size: 18px;
-  margin-bottom: 20px;
 }
 
-.label {
-  font-weight: bold;
-  margin-top: 14px;
+h2 {
+  border-bottom: 1px solid #000;
+  font-size: 15px;
 }
 
 .box {
-  border: 1px solid #000;
-  padding: 8px;
   white-space: pre-wrap;
-}
-
-@media print {
-  select, button {
-    display: none;
-  }
-  body {
-    margin: 0;
-  }
-  .print-page {
-    page-break-after: always;
-  }
 }
 </style>
 </head>
 
 <body>
 
-<select id="episodeSelect">
-  <option value="">放送回を選択</option>
-</select>
+<h1>給食放送 印刷用アプリ</h1>
 
+<textarea id="jsonInput" placeholder="JSONを貼り付け"></textarea>
+
+<input id="dateInput" placeholder="印刷したい日付（例：3/2）">
+
+<button onclick="buildPrint()">印刷用生成</button>
 <button onclick="window.print()">印刷</button>
 
-<div id="printArea"></div>
+<div id="output"></div>
 
 <script>
-/* ===== JSONをここに貼る ===== */
-const data = [
-  {
-    "date": "3/2",
-    "number": "5",
-    "trivia": "この時間はランチタイム雑学をお届けします。\n今日のテーマは「色」です。\n\nでは、問題です。\nなぜ日本では、緑なのに「青」と言うことがあるのでしょうか？\n\n10秒間、考えてみてください。"
+function buildPrint() {
+  const output = document.getElementById("output");
+  output.innerHTML = "";
+
+  let data;
+  try {
+    data = JSON.parse(document.getElementById("jsonInput").value);
+  } catch {
+    alert("JSONが正しくありません");
+    return;
   }
-];
-/* =========================== */
 
-const select = document.getElementById("episodeSelect");
-const area = document.getElementById("printArea");
+  const targetDate = document.getElementById("dateInput").value;
 
-data.forEach(item => {
-  if (!item.number) return;
-  const option = document.createElement("option");
-  option.value = item.number;
-  option.textContent = `第${item.number}回（${item.date}）`;
-  select.appendChild(option);
-});
+  const ep = data.find(e =>
+    e.date === targetDate &&
+    (e.number === null || e.number === undefined || e.number === "")
+  );
 
-select.addEventListener("change", () => {
-  area.innerHTML = "";
-  const selected = data.find(d => d.number === select.value);
-  if (!selected) return;
+  if (!ep) {
+    alert("該当する未設定の放送がありません");
+    return;
+  }
 
-  area.innerHTML = `
-    <div class="print-page">
-      <h1>給食放送 提出用原稿</h1>
+  const page = document.createElement("div");
+  page.className = "print-page screen-hidden";
 
-      <div class="label">放送予定日</div>
-      <div class="box">${selected.date}</div>
+  page.innerHTML = `
+    <h1>給食放送 提出用原稿</h1>
+    <div>放送日：${ep.date}</div>
+    <div>放送番号：未設定</div>
 
-      <div class="label">テーマ</div>
-      <div class="box">${getTheme(selected.trivia)}</div>
+    <h2>オープニング</h2>
+    <div class="box">${ep.opening || ""}</div>
 
-      <div class="label">台本本文</div>
-      <div class="box">${selected.trivia}</div>
-    </div>
+    ${ep.trivia ? `
+      <h2>ランチタイム雑学</h2>
+      <div class="box">${ep.trivia}</div>
+    ` : ""}
+
+    <h2>エンディング</h2>
+    <div class="box">${ep.ending || ""}</div>
   `;
-});
 
-function getTheme(text) {
-  const m = text.match(/テーマは「(.+?)」/);
-  return m ? m[1] : "（未記入）";
+  output.appendChild(page);
 }
 </script>
 
