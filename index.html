@@ -1,21 +1,130 @@
-@media print {
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>放送台本 印刷システム</title>
+
+<style>
   body {
-    margin: 20mm;
-    font-size: 14px;
-    line-height: 1.7;
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    padding: 20px;
   }
 
-  input, textarea, button {
+  textarea, input, button {
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  button {
+    padding: 10px;
+  }
+
+  /* 印刷用ページ：画面では非表示 */
+  .print-page {
     display: none;
   }
 
-  .print-page {
-    display: block;
-    page-break-after: always;
-  }
-}
+  @media print {
+    body {
+      margin: 20mm;
+      font-size: 14px;
+      line-height: 1.7;
+    }
 
-/* 画面では印刷内容を隠す */
-.print-page {
-  display: none;
+    textarea, input, button {
+      display: none;
+    }
+
+    .print-page {
+      display: block;
+      break-after: page;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 15px;
+      margin-top: 20px;
+      border-bottom: 1px solid #000;
+    }
+
+    .meta {
+      margin-bottom: 15px;
+    }
+
+    .block {
+      white-space: pre-wrap;
+      margin-top: 8px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<h1>放送台本 印刷</h1>
+
+<label>JSON入力</label>
+<textarea id="jsonInput" rows="12" placeholder="ここにJSONを貼り付け"></textarea>
+
+<label>放送日（例：3/2）</label>
+<input id="dateInput" placeholder="3/2">
+
+<button onclick="preparePrint()">印刷する</button>
+
+<div id="printArea"></div>
+
+<script>
+function preparePrint() {
+  const jsonText = document.getElementById("jsonInput").value;
+  const targetDate = document.getElementById("dateInput").value.trim();
+
+  let data;
+  try {
+    data = JSON.parse(jsonText);
+  } catch {
+    alert("JSONの形式が正しくありません");
+    return;
+  }
+
+  const item = data.find(d => d.date.startsWith(targetDate));
+  if (!item) {
+    alert("指定した日付の放送が見つかりません");
+    return;
+  }
+
+  const number = item.number && item.number !== "" ? item.number : "未設定";
+
+  const page = document.createElement("div");
+  page.className = "print-page";
+
+  page.innerHTML = `
+    <div class="meta">
+      <strong>放送日：</strong>${item.date}<br>
+      <strong>放送番号：</strong>${number}
+    </div>
+
+    <h2>オープニング</h2>
+    <div class="block">${item.opening || ""}</div>
+
+    <h2>ランチタイム雑学</h2>
+    <div class="block">${item.trivia || "なし"}</div>
+
+    <h2>エンディング</h2>
+    <div class="block">${item.ending || ""}</div>
+  `;
+
+  const area = document.getElementById("printArea");
+  area.innerHTML = "";
+  area.appendChild(page);
+
+  window.print();
 }
+</script>
+
+</body>
+</html>
